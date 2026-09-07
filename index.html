@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Lab Fisika</title>
+  <style>
+    * { box-sizing: border-box; font-family: sans-serif; margin: 0; padding: 0; }
+    body { background-color: #f0f4f8; padding: 20px; }
+    header { background: #0284c7; color: white; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+    .page { display: none; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .page.active { display: block; }
+    .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+    .card { background: #e0f2fe; padding: 20px; border-radius: 8px; text-align: center; cursor: pointer; border: 2px solid #0284c7; }
+    .canvas-container { background: #0f172a; border-radius: 8px; display: flex; justify-content: center; align-items: center; height: 300px; margin-bottom: 15px; }
+    .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; background: #0284c7; color: white; margin-top: 10px; }
+    .btn-back { background: #64748b; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Virtual Lab: Getaran, Gelombang & Cahaya</h1>
+  </header>
+
+  <!-- Dashboard -->
+  <div id="dashboard" class="page active">
+    <h2>Pilih Modul Practical Virtual</h2>
+    <div class="menu-grid">
+      <div class="card" onclick="switchPage('pendulum')">
+        <h3>1. Getaran (Pendulum)</h3>
+        <p>Eksperimen Ayunan Sederhana</p>
+      </div>
+      <div class="card" onclick="switchPage('cahaya')">
+        <h3>2. Pembiasan Cahaya</h3>
+        <p>Simulasi Hukum Snellius</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modul Pendulum -->
+  <div id="pendulum" class="page">
+    <button class="btn btn-back" onclick="switchPage('dashboard')">← Kembali</button>
+    <h2>Simulasi Getaran Pendulum</h2>
+    <div class="canvas-container">
+      <canvas id="canvasP" width="300" height="280"></canvas>
+    </div>
+    <div>
+      <label>Panjang Tali (L): <span id="valL">1.0</span> m</label><br>
+      <input type="range" id="inputL" min="0.2" max="2.0" step="0.1" value="1.0" style="width:100%;">
+    </div>
+    <button class="btn" id="btnPlay">Mulai / Jeda</button>
+    <p style="margin-top:15px;"><b>Periode (T):</b> <span id="outT">2.01</span> s</p>
+  </div>
+
+  <!-- Modul Cahaya -->
+  <div id="cahaya" class="page">
+    <button class="btn btn-back" onclick="switchPage('dashboard')">← Kembali</button>
+    <h2>Simulasi Pembiasan Cahaya</h2>
+    <div class="canvas-container">
+      <canvas id="canvasC" width="300" height="280"></canvas>
+    </div>
+    <div>
+      <label>Sudut Datang (θ₁): <span id="valTheta">45</span>°</label><br>
+      <input type="range" id="inputTheta" min="0" max="80" value="45" style="width:100%;">
+    </div>
+    <p style="margin-top:15px;"><b>Sudut Bias (θ₂):</b> <span id="outTheta2">32.1</span>°</p>
+  </div>
+
+  <script>
+    function switchPage(id) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // Canvas Pendulum
+    const canvasP = document.getElementById('canvasP');
+    const ctxP = canvasP.getContext('2d');
+    let L = 1.0, angle = 0.3, angleVel = 0, isRunning = false;
+
+    document.getElementById('inputL').addEventListener('input', (e) => {
+      L = parseFloat(e.target.value);
+      document.getElementById('valL').innerText = L;
+      document.getElementById('outT').innerText = (2 * Math.PI * Math.sqrt(L / 9.8)).toFixed(2);
+    });
+    document.getElementById('btnPlay').addEventListener('click', () => { isRunning = !isRunning; });
+
+    function drawP() {
+      ctxP.clearRect(0, 0, 300, 280);
+      if (isRunning) {
+        let accel = (-1 * 9.8 / (L * 100)) * Math.sin(angle);
+        angleVel += accel;
+        angle += angleVel;
+      }
+      let x = 150 + (L * 80) * Math.sin(angle);
+      let y = 20 + (L * 80) * Math.cos(angle);
+      
+      ctxP.beginPath(); ctxP.moveTo(150, 20); ctxP.lineTo(x, y); ctxP.strokeStyle = 'white'; ctxP.stroke();
+      ctxP.beginPath(); ctxP.arc(x, y, 12, 0, Math.PI*2); ctxP.fillStyle = '#38bdf8'; ctxP.fill();
+      requestAnimationFrame(drawP);
+    }
+    drawP();
+
+    // Canvas Cahaya
+    const canvasC = document.getElementById('canvasC');
+    const ctxC = canvasC.getContext('2d');
+    let theta1 = 45;
+
+    document.getElementById('inputTheta').addEventListener('input', (e) => {
+      theta1 = parseFloat(e.target.value);
+      document.getElementById('valTheta').innerText = theta1;
+      drawC();
+    });
+
+    function drawC() {
+      ctxC.clearRect(0, 0, 300, 280);
+      ctxC.fillStyle = 'rgba(56, 189, 248, 0.3)'; ctxC.fillRect(0, 140, 300, 140);
+      
+      let rad1 = theta1 * Math.PI / 180;
+      let theta2 = Math.asin((1.0 * Math.sin(rad1)) / 1.33);
+      
+      ctxC.beginPath(); ctxC.moveTo(150 - 100*Math.sin(rad1), 140 - 100*Math.cos(rad1));
+      ctxC.lineTo(150, 140); ctxC.strokeStyle = '#ef4444'; ctxC.lineWidth = 3; ctxC.stroke();
+      
+      ctxC.beginPath(); ctxC.moveTo(150, 140);
+      ctxC.lineTo(150 + 100*Math.sin(theta2), 140 + 100*Math.cos(theta2));
+      ctxC.strokeStyle = '#f59e0b'; ctxC.lineWidth = 3; ctxC.stroke();
+
+      document.getElementById('outTheta2').innerText = (theta2 * 180 / Math.PI).toFixed(1);
+    }
+    drawC();
+  </script>
+</body>
+</html>
